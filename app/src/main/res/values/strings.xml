@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Anchor</string>
+    <string name="engine_running">Engine running on port 3160</string>
+    <string name="engine_starting">Starting Anchor Engine…</string>
+    <string name="engine_stopped">Engine stopped</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_sync">Sync Repos</string>
+    <string name="tailscale_status">Tailscale: %1$s</string>
+    <string name="repo_count">%1$d repos synced</string>
+</resources>

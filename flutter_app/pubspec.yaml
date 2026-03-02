@@ -1,0 +1,66 @@
+name: anchor_android
+description: Anchor Android - Sovereign Memory Server Flutter App
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # HTTP & API
+  http: ^1.1.0
+  dio: ^5.4.0
+  
+  # State Management
+  provider: ^6.1.1
+  get_it: ^7.6.4
+  
+  # Storage
+  shared_preferences: ^2.2.2
+  path_provider: ^2.1.1
+  sqflite: ^2.3.0
+  
+  # Background Services
+  flutter_background_service: ^5.0.5
+  flutter_background_service_android: ^6.2.2
+  
+  # Permissions
+  permission_handler: ^11.0.1
+  
+  # UI Components
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.9
+  
+  # Utilities
+  intl: ^0.18.1
+  url_launcher: ^6.2.2
+  package_info_plus: ^5.0.1
+  connectivity_plus: ^5.0.2
+  
+  # JSON Serialization
+  json_annotation: ^4.8.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  build_runner: ^2.4.7
+  json_serializable: ^6.7.1
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
+  
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
