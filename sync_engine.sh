@@ -55,7 +55,18 @@ fi
 echo "[sync_engine] Installing engine dependencies..."
 pnpm install --frozen-lockfile
 
-# 3. Build TypeScript + pkg linux-arm64 binary
+# 3. Ensure a .env file exists (it is gitignored in the engine repo)
+# Create one with placeholder values if it is absent so the build does not fail.
+ENGINE_ENV="$ENGINE_REPO/engine/.env"
+if [ ! -f "$ENGINE_ENV" ]; then
+    echo "[sync_engine] .env not found — creating placeholder at $ENGINE_ENV"
+    cat > "$ENGINE_ENV" <<'EOF'
+PORT=3160
+EOF
+    echo "[sync_engine] Placeholder .env written."
+fi
+
+# 4. Build TypeScript + pkg linux-arm64 binary
 echo "[sync_engine] Building engine (TypeScript + pkg android)..."
 cd "$ENGINE_REPO/engine"
 pnpm run build:android
@@ -69,7 +80,7 @@ fi
 BINARY_SIZE=$(du -sh "$BINARY" | cut -f1)
 echo "[sync_engine] Binary built successfully: $BINARY_SIZE"
 
-# 4. Copy binary to Flutter assets
+# 5. Copy binary to Flutter assets
 echo "[sync_engine] Copying binary to Flutter assets..."
 mkdir -p "$FLUTTER_ASSETS"
 cp "$BINARY" "$FLUTTER_ASSETS/anchor-engine"
