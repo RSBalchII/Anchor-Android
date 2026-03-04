@@ -39,14 +39,8 @@ if [ -d "$ENGINE_REPO/.git" ]; then
     cd "$ENGINE_REPO"
     git pull origin main
 else
-    REPO_URL="${ENGINE_REPO_URL:-}"
-    if [ -z "$REPO_URL" ]; then
-        echo "[sync_engine] ERROR: Engine repo not found at $ENGINE_REPO"
-        echo "[sync_engine] Either clone the engine repo as a sibling directory,"
-        echo "[sync_engine] or set ENGINE_REPO_URL to a cloneable URL (e.g. with a PAT for CI)."
-        exit 1
-    fi
-    echo "[sync_engine] Engine repo not found — cloning from ENGINE_REPO_URL..."
+    REPO_URL="https://github.com/RSBalchII/anchor-engine-node.git"
+    echo "[sync_engine] Engine repo not found — cloning from $REPO_URL..."
     git clone "$REPO_URL" "$ENGINE_REPO"
     cd "$ENGINE_REPO"
 fi
