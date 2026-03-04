@@ -1,0 +1,64 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch: # This allows you to manually trigger the build from your phone
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and Package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18' # Matches your engine's node18-linux-arm64 target
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Setup Java (For Android Build)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Initialize Flutter Android Project
+        # flutter create . generates the android/ boilerplate if it is missing,
+        # and is a no-op for files that already exist.
+        working-directory: ./flutter_app
+        run: flutter create . --platforms android
+
+      - name: Sync and Build Engine Binary
+        # Pulls the private engine repo (clones it on first run) and compiles
+        # the linux-arm64 binary, then copies it to flutter_app/assets/engine/.
+        # Requires ENGINE_REPO_URL secret: full HTTPS clone URL including a PAT,
+        # e.g. https://x-access-token:<TOKEN>@github.com/ORG/anchor-engine-node.git
+        env:
+          ENGINE_REPO_URL: ${{ secrets.ENGINE_REPO_URL }}
+        run: |
+          chmod +x sync_engine.sh
+          ./sync_engine.sh
+
+      - name: Build Flutter APK
+        working-directory: ./flutter_app
+        run: |
+          flutter pub get
+          flutter build apk --release
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Anchor-Engine-Android-APK
+          path: flutter_app/build/app/outputs/flutter-apk/app-release.apk

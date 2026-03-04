@@ -1,8 +1,12 @@
-# Engine source cache used by sync_engine.sh
-.engine-cache/
+# Engine binary (built by sync_engine.sh, too large to commit)
+flutter_app/assets/engine/anchor-engine
 
 # Flutter build artifacts
 flutter_app/build/
 flutter_app/.dart_tool/
 flutter_app/.flutter-plugins
 flutter_app/.flutter-plugins-dependencies
+
+# Android build
+flutter_app/android/.gradle/
+flutter_app/android/local.properties
