@@ -1,5 +1,5 @@
 name: anchor_android
-description: Anchor Android - Pure WebView wrapper
+description: Anchor Android - Pure WebView wrapper over anchor-engine-node
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -10,6 +10,8 @@ dependencies:
   flutter:
     sdk: flutter
   webview_flutter: ^4.10.0
+  path_provider: ^2.1.1   # For app-private dir where we extract the engine binary
+  http: ^1.1.0             # For polling localhost:3160/health before loading WebView
 
 dev_dependencies:
   flutter_test:
@@ -18,3 +20,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/engine/   # Contains anchor-engine linux-arm64 binary (built by sync_engine.sh)
+
