@@ -33,10 +33,23 @@ FLUTTER_ASSETS="$SCRIPT_DIR/flutter_app/assets/engine"
 echo "[sync_engine] Engine repo: $ENGINE_REPO"
 echo "[sync_engine] Flutter assets target: $FLUTTER_ASSETS"
 
-# 1. Pull latest engine code
+# 1. Pull or clone latest engine code
 echo "[sync_engine] Pulling latest engine..."
-cd "$ENGINE_REPO"
-git pull origin main
+if [ -d "$ENGINE_REPO/.git" ]; then
+    cd "$ENGINE_REPO"
+    git pull origin main
+else
+    REPO_URL="${ENGINE_REPO_URL:-}"
+    if [ -z "$REPO_URL" ]; then
+        echo "[sync_engine] ERROR: Engine repo not found at $ENGINE_REPO"
+        echo "[sync_engine] Either clone the engine repo as a sibling directory,"
+        echo "[sync_engine] or set ENGINE_REPO_URL to a cloneable URL (e.g. with a PAT for CI)."
+        exit 1
+    fi
+    echo "[sync_engine] Engine repo not found — cloning from ENGINE_REPO_URL..."
+    git clone "$REPO_URL" "$ENGINE_REPO"
+    cd "$ENGINE_REPO"
+fi
 
 # 2. Install dependencies
 echo "[sync_engine] Installing engine dependencies..."
