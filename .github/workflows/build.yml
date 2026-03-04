@@ -42,9 +42,15 @@ jobs:
         # the linux-arm64 binary, then copies it to flutter_app/assets/engine/.
         # Requires ENGINE_REPO_URL secret: full HTTPS clone URL including a PAT,
         # e.g. https://x-access-token:<TOKEN>@github.com/ORG/anchor-engine-node.git
+        # If ENGINE_REPO_URL is not set, this step is skipped with a warning and
+        # the APK will be built without the engine binary (not functional at runtime).
         env:
           ENGINE_REPO_URL: ${{ secrets.ENGINE_REPO_URL }}
         run: |
+          if [ -z "$ENGINE_REPO_URL" ]; then
+            echo "::warning::ENGINE_REPO_URL secret is not set. Skipping engine build. The resulting APK will not include the engine binary and will not function at runtime."
+            exit 0
+          fi
           chmod +x sync_engine.sh
           ./sync_engine.sh
 
