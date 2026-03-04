@@ -8,11 +8,23 @@
 #   ../anchor-engine-node
 #
 # Prerequisites:
+#   - Linux or WSL2 (cross-compiling linux-arm64 from Windows is NOT supported)
 #   - Node.js >= 18, pnpm installed
-#   - @yao-pkg/pkg installed (added to engine devDependencies)
+#   - @yao-pkg/pkg is a devDependency — installed automatically by pnpm install
 #   - Run from the anchor-android repo root
+#
+# NOTE: This script MUST be run on Linux or WSL2.
+# @yao-pkg/pkg cannot cross-compile linux-arm64 binaries from a Windows host.
+# Windows users: open WSL2 and run this script from within WSL.
 
 set -e
+
+# Check we're on Linux (or WSL)
+if [[ "$(uname -s)" != "Linux" ]]; then
+    echo "[sync_engine] ERROR: This script must run on Linux or WSL2."
+    echo "[sync_engine] On Windows: open WSL2 and run ./sync_engine.sh from there."
+    exit 1
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENGINE_REPO="${1:-$SCRIPT_DIR/../anchor-engine-node}"
