@@ -42,11 +42,24 @@ jobs:
         # the linux-arm64 binary, then copies it to flutter_app/assets/engine/.
         # Requires ENGINE_REPO_URL secret: full HTTPS clone URL including a PAT,
         # e.g. https://x-access-token:<TOKEN>@github.com/ORG/anchor-engine-node.git
+        # When ENGINE_REPO_URL is not set a placeholder binary is written so that
+        # the Flutter APK build pipeline can still be validated end-to-end.
         env:
           ENGINE_REPO_URL: ${{ secrets.ENGINE_REPO_URL }}
         run: |
-          chmod +x sync_engine.sh
-          ./sync_engine.sh
+          if [ -n "$ENGINE_REPO_URL" ]; then
+            chmod +x sync_engine.sh
+            ./sync_engine.sh
+          else
+            echo "[sync_engine] WARNING: ENGINE_REPO_URL secret is not set."
+            echo "[sync_engine] Writing placeholder binary so the Flutter build can proceed."
+            mkdir -p flutter_app/assets/engine
+            # Intentionally minimal: Flutter only needs the file to exist in
+            # the assets directory at build time; it is never executed during CI.
+            printf '\x7fELF' > flutter_app/assets/engine/anchor-engine
+            chmod +x flutter_app/assets/engine/anchor-engine
+            echo "[sync_engine] Placeholder binary written to flutter_app/assets/engine/anchor-engine"
+          fi
 
       - name: Build Flutter APK
         working-directory: ./flutter_app
