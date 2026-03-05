@@ -94,6 +94,7 @@ class _EngineBootstrapState extends State<EngineBootstrap> {
 
   /// Copy the binary from Flutter assets to the app's private data directory
   /// and mark it executable. Only re-copies when the asset has changed.
+  /// The binary is always marked executable before being returned.
   Future<File> _extractBinary() async {
     setState(() => _status = 'Extracting engine binary...');
 
@@ -106,9 +107,10 @@ class _EngineBootstrapState extends State<EngineBootstrap> {
     // Re-extract if missing or size differs (simple freshness check)
     if (!dest.existsSync() || dest.lengthSync() != bytes.length) {
       await dest.writeAsBytes(bytes, flush: true);
-      // Mark executable (linux permission 0755)
-      await Process.run('chmod', ['+x', dest.path]);
     }
+
+    // Make it executable
+    await Process.run('chmod', ['+x', dest.path]);
 
     return dest;
   }
