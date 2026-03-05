@@ -4,11 +4,17 @@
  * Verbose Logger for Anchor Engine (Android)
  *
  * Intercepts console.log, console.error, and console.warn and appends all
- * output — with ISO-8601 timestamps — to the log file at:
+ * output — with ISO-8601 timestamps — to the log file.
+ *
+ * Primary log path (requires MANAGE_EXTERNAL_STORAGE on API 30+):
  *   /storage/emulated/0/Download/anchor_engine_verbose.log
  *
- * The path is fixed per the Android deployment requirement. The app must hold
- * WRITE_EXTERNAL_STORAGE permission (or use a MediaStore URI on API 29+).
+ * Fallback log path (app-scoped external storage, no special permission needed):
+ *   /sdcard/Android/data/org.anchoros.android/files/anchor_engine_verbose.log
+ *
+ * If the primary path cannot be opened or written (e.g. MANAGE_EXTERNAL_STORAGE
+ * has not yet been granted by the user), the logger automatically retries using
+ * the fallback path so that engine output is never silently discarded.
  *
  * Uses only the built-in `fs` module so it works inside the nodejs-mobile
  * binary without any npm dependencies.
@@ -19,25 +25,44 @@
 
 const fs = require('fs');
 
-const LOG_PATH = '/storage/emulated/0/Download/anchor_engine_verbose.log';
+// Primary log path: public Downloads folder (requires MANAGE_EXTERNAL_STORAGE on API 30+).
+// Fallback log path: app-scoped external storage (no special permission needed).
+const LOG_PATH_PRIMARY  = '/storage/emulated/0/Download/anchor_engine_verbose.log';
+const LOG_PATH_FALLBACK = '/sdcard/Android/data/org.anchoros.android/files/anchor_engine_verbose.log';
 
 // ---------------------------------------------------------------------------
 // Async write stream — opened in append mode so existing log content is kept.
 // The stream handles its own internal buffer so writes are non-blocking and
 // message order is always preserved.
 // ---------------------------------------------------------------------------
-let _stream = null;
+let _stream           = null;
+let _useFallback      = false;
+let _permanentlyFailed = false;
 
 function getStream() {
+  if (_permanentlyFailed) return null;
   if (!_stream) {
+    const logPath = _useFallback ? LOG_PATH_FALLBACK : LOG_PATH_PRIMARY;
     try {
-      _stream = fs.createWriteStream(LOG_PATH, { flags: 'a', encoding: 'utf8' });
+      _stream = fs.createWriteStream(logPath, { flags: 'a', encoding: 'utf8' });
       _stream.on('error', function () {
-        // Silence stream errors so a disk/permission failure cannot crash the
-        // engine. Recreate the stream on the next write attempt.
+        // If the primary path fails (e.g. MANAGE_EXTERNAL_STORAGE not granted),
+        // switch to the app-scoped fallback path on the next write attempt.
         _stream = null;
+        if (!_useFallback) {
+          _useFallback = true;
+        } else {
+          // Both paths have failed — stop retrying to avoid busy loops.
+          _permanentlyFailed = true;
+        }
       });
     } catch (_) {
+      if (!_useFallback) {
+        _useFallback = true;
+      } else {
+        // Both paths have failed synchronously — give up.
+        _permanentlyFailed = true;
+      }
       return null;
     }
   }
