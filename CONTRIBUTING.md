@@ -33,42 +33,47 @@ We are committed to providing a welcoming and inspiring community for all. Pleas
 ### 1. Set Up Development Environment
 
 **Prerequisites:**
-- Android Studio (Arctic Fox or newer)
-- Android SDK 34
-- Git
+- **Linux or WSL2** (required for building the ARM64 engine binary)
+- **Flutter SDK** (stable channel — `flutter channel stable && flutter upgrade`)
+- **Android SDK** (API 34) and `adb`
+- **Node.js ≥ 18** and **pnpm** (for engine binary compilation)
+- **Git**
 
 **Clone and Setup:**
 ```bash
-git clone https://github.com/your-org/anchor-android.git
-cd anchor-android
+git clone https://github.com/RSBalchII/Anchor-Android.git
+cd Anchor-Android
 ```
 
-**Open in Android Studio:**
-```
-File → Open → Select anchor-android directory
-Wait for Gradle sync
-```
-
-### 2. Build the Project
-
+**Build the Engine Binary:**
 ```bash
-# Build debug APK
-./gradlew assembleDebug
-
-# Install on emulator
-adb install app/build/outputs/apk/debug/app-debug.apk
-
-# Run tests
-./gradlew test
+# Must run on Linux/WSL2
+./sync_engine.sh
+# Output: flutter_app/assets/engine/anchor-engine (~50MB ARM64 binary)
 ```
 
-### 3. Make Your First Contribution
+**Build the Flutter APK:**
+```bash
+cd flutter_app
+flutter pub get
+flutter build apk --debug
+```
+
+**Install on emulator/device:**
+```bash
+adb install build/app/outputs/flutter-apk/app-debug.apk
+```
+
+### 2. Development Without Building the Engine
+
+If you only need to work on the Flutter UI or documentation, you can skip the engine
+binary build and install a previous APK from the [GitHub Actions artifacts](https://github.com/RSBalchII/Anchor-Android/actions/workflows/build.yml).
 
 **Good First Issues:**
 - Documentation improvements
-- Bug fixes
-- Test coverage
-- UI polish
+- Bug fixes in `flutter_app/lib/main.dart`
+- Flutter unit tests for `EngineBootstrap`
+- Improving error messages in the loading/error screens
 
 **Find Issues:**
 - Check `specs/tasks.md` for planned work
@@ -95,10 +100,11 @@ git checkout -b feature/your-feature-name
 ### 2. Make Changes
 
 **Code Style:**
-- Follow Kotlin conventions
+- Follow Dart/Flutter conventions (`flutter analyze` must pass)
 - Use meaningful variable names
 - Add comments for complex logic
 - Keep functions small and focused
+- For `sync_engine.sh` changes, use `shellcheck` for linting
 
 **Documentation:**
 - Update docs alongside code
@@ -239,58 +245,59 @@ graph TB
 ### Unit Tests
 
 **Required For:**
-- Service lifecycle logic
-- Storage management
+- `EngineBootstrap` lifecycle logic (boot sequence, health polling)
+- Binary extraction and freshness check
+- Permission request helpers
 - Network utilities
-- Data transformations
 
 **Example Test:**
-```kotlin
-@Test
-fun `engine service creates notification channel`() {
-    val service = EngineService()
-    service.onCreate()
-    
-    // Verify notification channel created
-    val notificationManager = getSystemService(NotificationManager::class.java)
-    val channel = notificationManager.getNotificationChannel(CHANNEL_ID)
-    assertNotNull(channel)
-}
+```dart
+testWidgets('EngineBootstrap shows loading screen during boot', (tester) async {
+  await tester.pumpWidget(const MaterialApp(home: EngineBootstrap()));
+  expect(find.byType(CircularProgressIndicator), findsOneWidget);
+});
 ```
 
 ### Integration Tests
 
 **Required For:**
-- Engine startup flow
-- GitHub sync workflow
-- Tailscale connectivity
-- API endpoints
+- Full engine boot sequence (binary extraction + start + health poll)
+- WebView loads `localhost:3160` after engine ready
+- Log file written to Downloads
+- Engine process killed on widget disposal
 
 **Example Test:**
-```kotlin
-@Test
-fun `engine responds to health check`() {
-    // Start engine
-    EngineService.start(context)
-    waitForEngineReady()
-    
-    // Query health endpoint
-    val response = httpClient.get("http://localhost:3160/health")
-    
-    // Verify response
-    assertEquals(200, response.status)
-    assertEquals("healthy", response.json().status)
-}
+```dart
+testWidgets('Engine responds to health check', (tester) async {
+  await tester.pumpWidget(const MaterialApp(home: EngineBootstrap()));
+  // Wait for engine to be ready (≤ 90s)
+  await tester.pumpAndSettle(const Duration(seconds: 90));
+  expect(find.byType(WebViewWidget), findsOneWidget);
+});
+```
+
+### Run Tests
+
+```bash
+cd flutter_app
+
+# Unit tests
+flutter test
+
+# Integration tests (requires connected device/emulator)
+flutter test integration_test/
 ```
 
 ### Manual Testing Checklist
 
 **Before Submitting PR:**
-- [ ] App builds without errors
-- [ ] App launches without crashes
-- [ ] Engine service starts
-- [ ] No new warnings in Logcat
-- [ ] Tests pass locally
+- [ ] `flutter analyze` passes with no errors
+- [ ] App builds without errors (`flutter build apk --debug`)
+- [ ] App launches without crashes on emulator
+- [ ] Engine starts and WebView loads `localhost:3160`
+- [ ] `anchor_engine_verbose.log` appears in Downloads (if permissions granted)
+- [ ] No new warnings in `adb logcat`
+- [ ] Tests pass (`flutter test`)
 - [ ] Documentation updated
 
 ---
@@ -401,14 +408,19 @@ Add any other context, mockups, or screenshots about the feature request.
 
 ## 📖 Learning Resources
 
-### Android Development
-- **Android Basics in Kotlin:** https://developer.android.com/courses/android-basics-kotlin/overview
-- **Kotlin Bootcamp:** https://developer.android.com/courses/kotlin-bootcamp/overview
-- **Android Architecture:** https://developer.android.com/topic/architecture
+### Flutter & Dart Development
+- **Flutter Getting Started:** https://docs.flutter.dev/get-started
+- **Dart Language Tour:** https://dart.dev/language
+- **Flutter cookbook:** https://docs.flutter.dev/cookbook
+- **webview_flutter plugin:** https://pub.dev/packages/webview_flutter
 
-### Node.js on Android
-- **nodejs-mobile:** https://github.com/nicollite/nodejs-mobile
-- **Examples:** https://github.com/nicollite/nodejs-mobile-examples
+### Android Development
+- **Android Basics:** https://developer.android.com/get-started
+- **Android Foreground Services:** https://developer.android.com/guide/components/foreground-services
+
+### Node.js on Android (ARM64 binary approach)
+- **anchor-engine-node** (the engine being bundled): https://github.com/RSBalchII/anchor-engine-node
+- **@yao-pkg/pkg** (Node.js binary compiler): https://github.com/yao-pkg/pkg
 
 ### Tailscale
 - **Getting Started:** https://tailscale.com/kb/1017/install/
@@ -419,22 +431,21 @@ Add any other context, mockups, or screenshots about the feature request.
 ## 🎯 Areas Needing Contribution
 
 ### High Priority
-- **Node.js Integration:** Help bundle nodejs-mobile properly
-- **GitHub Sync:** Implement robust tarball fetching/unpacking
-- **Tailscale SDK:** Integrate official Tailscale Android library
-- **UI/UX:** Design native Android interface (Jetpack Compose)
+- **PR #13 Review**: Merge the `chmod +x` fix
+- **GitHub Sync**: Implement tarball fetch + unpack (v0.3.0)
+- **Tailscale SDK**: Integrate official Tailscale Android library
+- **Tests**: Write Flutter unit/integration tests for `EngineBootstrap`
 
 ### Medium Priority
-- **Unit Tests:** Increase test coverage
-- **Documentation:** Improve guides and examples
-- **Performance:** Optimize battery and memory usage
-- **Accessibility:** Make app usable for everyone
+- **Settings Screen**: GitHub token entry, sync interval, port (v0.3.0)
+- **Native UI**: Replace Flutter WebView shell with Jetpack Compose (v0.4.0)
+- **Documentation**: Improve guides and code examples
+- **Performance**: Optimize binary boot time, battery usage
 
 ### Low Priority (But Welcome)
-- **Icon Design:** Create app icons
-- **Translations:** Localize to other languages
-- **Website:** Build landing page
-- **Marketing:** Spread the word
+- **Icon Design**: Create app icons
+- **Translations**: Localize to other languages
+- **Website**: Build landing page
 
 ---
 
