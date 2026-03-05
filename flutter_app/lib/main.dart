@@ -5,9 +5,34 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() {
   runApp(const AnchorApp());
+}
+
+/// Requests WRITE_EXTERNAL_STORAGE (API ≤ 29) and MANAGE_EXTERNAL_STORAGE
+/// (API 30+) so the engine can write log files to the Downloads folder.
+/// Called during app initialisation before the engine binary is launched.
+Future<void> _requestStoragePermissions() async {
+  // MANAGE_EXTERNAL_STORAGE covers Android 11+ (API 30+); the user is
+  // redirected to the system settings screen if not already granted.
+  final manageStatus = await Permission.manageExternalStorage.request();
+  if (!manageStatus.isGranted) {
+    debugPrint(
+      '[Permissions] MANAGE_EXTERNAL_STORAGE not granted ($manageStatus). '
+      'Log files may not be writable to the Downloads folder.',
+    );
+  }
+
+  // WRITE_EXTERNAL_STORAGE is the legacy permission for Android 9/10 (API ≤ 29).
+  final storageStatus = await Permission.storage.request();
+  if (!storageStatus.isGranted) {
+    debugPrint(
+      '[Permissions] WRITE_EXTERNAL_STORAGE not granted ($storageStatus). '
+      'Log files may not be writable to the Downloads folder.',
+    );
+  }
 }
 
 class AnchorApp extends StatelessWidget {
@@ -57,6 +82,7 @@ class _EngineBootstrapState extends State<EngineBootstrap> {
 
   Future<void> _boot() async {
     try {
+      await _requestStoragePermissions();
       final binary = await _extractBinary();
       await _startEngine(binary);
       await _waitForReady();

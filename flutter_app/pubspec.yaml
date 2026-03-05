@@ -12,6 +12,7 @@ dependencies:
   webview_flutter: ^4.10.0
   path_provider: ^2.1.1   # For app-private dir where we extract the engine binary
   http: ^1.1.0             # For polling localhost:3160/health before loading WebView
+  permission_handler: ^11.3.1  # For requesting MANAGE_EXTERNAL_STORAGE / WRITE_EXTERNAL_STORAGE
 
 dev_dependencies:
   flutter_test:
