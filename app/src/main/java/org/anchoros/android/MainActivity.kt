@@ -58,7 +58,24 @@ class MainActivity : AppCompatActivity() {
                 Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
                 Uri.fromParts("package", packageName, null)
             )
-            startActivity(intent)
+            if (intent.resolveActivity(packageManager) != null) {
+                startActivity(intent)
+            } else {
+                // Fallback: try the generic "All files access" settings page
+                val fallbackIntent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                if (fallbackIntent.resolveActivity(packageManager) != null) {
+                    startActivity(fallbackIntent)
+                } else {
+                    // Final fallback: open this app's details settings page
+                    val appSettingsIntent = Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.fromParts("package", packageName, null)
+                    )
+                    if (appSettingsIntent.resolveActivity(packageManager) != null) {
+                        startActivity(appSettingsIntent)
+                    }
+                }
+            }
         }
     }
     
