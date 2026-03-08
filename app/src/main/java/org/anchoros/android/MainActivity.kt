@@ -1,6 +1,11 @@
 package org.anchoros.android
 
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.Settings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
@@ -14,6 +19,8 @@ import androidx.appcompat.app.AppCompatActivity
 class MainActivity : AppCompatActivity() {
     
     private lateinit var webView: WebView
+    /** True once we have sent the user to the "All files access" settings page. */
+    private var storagePermissionRequested = false
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,6 +41,42 @@ class MainActivity : AppCompatActivity() {
         }
         
         setContentView(webView)
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // On Android 11+ (API 30+), MANAGE_EXTERNAL_STORAGE cannot be granted via the
+        // normal permission dialog. We must send the user to the system settings page.
+        // We only do this once per session to avoid an infinite redirect loop when the
+        // user returns from settings without granting the permission.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+            !Environment.isExternalStorageManager() &&
+            !storagePermissionRequested
+        ) {
+            storagePermissionRequested = true
+            val intent = Intent(
+                Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                Uri.fromParts("package", packageName, null)
+            )
+            if (intent.resolveActivity(packageManager) != null) {
+                startActivity(intent)
+            } else {
+                // Fallback: try the generic "All files access" settings page
+                val fallbackIntent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                if (fallbackIntent.resolveActivity(packageManager) != null) {
+                    startActivity(fallbackIntent)
+                } else {
+                    // Final fallback: open this app's details settings page
+                    val appSettingsIntent = Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.fromParts("package", packageName, null)
+                    )
+                    if (appSettingsIntent.resolveActivity(packageManager) != null) {
+                        startActivity(appSettingsIntent)
+                    }
+                }
+            }
+        }
     }
     
     override fun onBackPressed() {
