@@ -30,7 +30,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AnchorAndroid"
         android:usesCleartextTraffic="true"
-        android:requestLegacyExternalStorage="true"
         android:extractNativeLibs="true"
         tools:targetApi="31">
         
